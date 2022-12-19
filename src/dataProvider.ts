@@ -43,17 +43,13 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
         url = `${apiUrl}/${resource}/${params.id}`;
         options.method = 'PUT';
         // Omit created_at/updated_at(RDS) and createdAt/updatedAt(Mongo) in request body
-        let {...dataUpdate} = params.data.attributes;
-        dataUpdate.id = params.data.id;
-        options.body = `{"data": ${JSON.stringify(dataUpdate)}}`;
-        console.log(params.data)
+        const {created_at, updated_at, createdAt, updatedAt, ...data} = params.data;
+        options.body = JSON.stringify(data);
         break;
       case CREATE:
         url = `${apiUrl}/${resource}`;
         options.method = 'POST';
-        let {...dataCreate} = params.data.attributes;
-        dataCreate.id = params.data.id;
-        options.body = `{"data": ${JSON.stringify(dataCreate)}}`;
+        options.body = JSON.stringify(params.data);
         break;
       case DELETE:
         url = `${apiUrl}/${resource}/${params.id}`;
@@ -108,6 +104,7 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
   }
 
   // Determines if there are new files to upload
+  // and returns file names in array if there are
   const determineUploadFieldNames = params => {
     if (!params.data) return [];
 
@@ -182,11 +179,11 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
     const { headers, json, total } = response;
     switch (type) {
       case GET_ONE:
-        return { data: replaceRefObjectsWithIds(json.data) };
+        return { data: replaceRefObjectsWithIds(json) };
       case GET_LIST:
       case GET_MANY_REFERENCE:
         return {
-          data: json.data,
+          data: json,
           total
         };
       case CREATE:
@@ -194,7 +191,7 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
       case DELETE:
         return { data: { id: null } };
       default:
-        return { data: json.data };
+        return { data: json };
     }
   };
 
@@ -217,11 +214,10 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
       return Promise.all(
         params.ids.map(id => {
           // Omit created_at/updated_at(RDS) and createdAt/updatedAt(Mongo) in request body
-          const {...data} = params.data.attributes;
-          data.id = params.data.id;
+          const {created_at, updated_at, createdAt, updatedAt, ...data} = params.data;
           return httpClient(`${apiUrl}/${resource}/${id}`, {
             method: 'PUT',
-            body: `{"data": ${JSON.stringify(data)}}`,
+            body: JSON.stringify(data),
           })
         })
       ).then(responses => ({
@@ -261,14 +257,19 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
 
     // Get total via model/count endpoint
     if (type === GET_MANY_REFERENCE || type === GET_LIST) {
+      const { url: urlForCount } = convertDataRequestToHTTP(
+        type,
+        resource + "/count",
+        params
+      );
       return Promise.all([
         httpClient(url, options),
+        httpClient(urlForCount, options),
       ]).then(promises => {
-        console.log(promises[0]);
         const response = {
           ...promises[0],
           // Add total for further use
-          total: parseInt(promises[0].json.meta.pagination.total, 10),
+          total: parseInt(promises[1].json, 10),
         };
         return convertHTTPResponse(response, type, resource, params);
       });
