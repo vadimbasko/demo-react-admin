@@ -100,7 +100,8 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
     const limit = perPage;//for strapi the _limit params indicate the amount of elements to return in the response
     const range = "_start=" + start + "&_limit=" + limit;
 
-    return sort + "&" + range + "&" + filter;
+    // return sort + "&" + range + "&" + filter;
+    return range + "&" + filter;
   }
 
   // Determines if there are new files to upload
