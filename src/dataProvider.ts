@@ -206,7 +206,8 @@ export default (apiUrl, httpClient = fetchUtils.fetchJson, uploadFields = []) =>
     if (type === 'changePassword') {
       return httpClient(
         'http://localhost:1337/change-password',
-        {method: 'post', body: JSON.stringify(params.data)});
+        {method: 'post', body: JSON.stringify(params.data)})
+        .then(response => response.json);
     }
 
     // Handle file uploading
