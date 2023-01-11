@@ -7,6 +7,7 @@ import {UserList} from "./UserList";
 
 import strapiRestProvider from './dataProvider';
 import {UserListFiltered} from "./UserListFiltered";
+import {RoleList} from "./RoleList";
 
 
 // change the URL to your Strapi API
@@ -16,6 +17,7 @@ const App = () => (
   <Admin dataProvider={dataProvider}>
     <Resource name="companies" list={ListGuesser} edit={EditGuesser}/>
     <Resource name="sys-users" list={UserListFiltered} edit={UserEdit} create={UserCreate}/>
+    <Resource name={"sys-roles"} list={RoleList}/>
   </Admin>);
 
 export default App;
